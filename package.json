@@ -1,0 +1,32 @@
+{
+  "name": "art-commission",
+  "version": "0.1.0",
+  "description": "Commission AI-generated game art from a standard data file: plan costs, generate via pluggable providers (Gemini sync/batch, Retro Diffusion, Scenario), chroma-key cutouts and palette locks in local post, keep raw originals for zero-cost reprocessing, and emit an engine-agnostic asset manifest.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "art-commission": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "schema",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "check": "tsc --noEmit",
+    "test": "npm run build && node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.4"
+  }
+}

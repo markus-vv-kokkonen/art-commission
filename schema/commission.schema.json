@@ -1,0 +1,151 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/art-commission/art-commission/main/schema/commission.schema.json",
+  "title": "art-commission commission file",
+  "description": "Standard, engine-agnostic data format for commissioning AI-generated game art. The CLI's own validator (src/config.ts) is the source of truth; this schema powers editor tooling.",
+  "type": "object",
+  "required": ["version", "assets"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1 },
+    "name": { "type": "string" },
+    "paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "assetRoot": { "type": "string", "description": "Root for asset `out` paths, relative to this file. Default \".\"" },
+        "rawRoot": { "type": "string", "description": "Where untouched model originals are kept (mirror of `out`). Default \".art-raw\"" },
+        "manifest": { "type": "string", "description": "Manifest path written by `wire`. Default \"art-manifest.json\"" }
+      }
+    },
+    "style": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "prefix": { "type": "string", "description": "Prepended to every prompt (global STYLE block)." },
+        "suffix": { "type": "string", "description": "Appended after the subject + key clause (palette/lighting/mood)." },
+        "negative": { "type": "string", "description": "Global negative clauses, appended last." },
+        "refSuffix": { "type": "string", "description": "Appended when an img2img `ref` image is attached." },
+        "anchorSuffix": { "type": "string", "description": "Appended when a `styleAnchor` output is attached." }
+      }
+    },
+    "palette": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+      "description": "Palette hexes — enables `quantize` posts."
+    },
+    "chromaKey": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "default": "#ff00ff" },
+    "chromaTolerance": { "type": "number", "default": 110 },
+    "pxScale": { "type": "number", "exclusiveMinimum": 0, "default": 1, "description": "Stored-size multiplier for scaled kinds (detail headroom)." },
+    "providers": {
+      "type": "object",
+      "properties": {
+        "default": { "type": "string", "enum": ["gemini", "retrodiffusion", "scenario", "mock"] }
+      },
+      "additionalProperties": {
+        "anyOf": [
+          { "type": "string", "description": "Shorthand: just the model id." },
+          { "$ref": "#/definitions/providerConfig" }
+        ]
+      }
+    },
+    "kinds": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/kindSpec" },
+      "description": "Additional kind presets, or overrides of the built-ins (cutout, plate, tile, still)."
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/asset" }
+    }
+  },
+  "definitions": {
+    "px": {
+      "type": "array",
+      "items": { "type": "number", "exclusiveMinimum": 0 },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "postSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cutout": { "type": "boolean", "description": "Chroma-key the prompted backdrop into real PNG alpha." },
+        "trim": { "type": "boolean", "description": "Trim transparent margins (post-cutout only)." },
+        "fit": { "type": "string", "enum": ["contain", "cover", "none"] },
+        "quantize": { "type": "boolean", "description": "Hard-lock opaque pixels to the palette." },
+        "kernel": { "type": "string", "enum": ["nearest", "lanczos3"] }
+      }
+    },
+    "kindSpec": {
+      "allOf": [{ "$ref": "#/definitions/postSpec" }],
+      "type": "object",
+      "properties": {
+        "cutout": {}, "trim": {}, "fit": {}, "quantize": {}, "kernel": {},
+        "scaled": { "type": "boolean", "description": "pxScale multiplies the stored size." },
+        "keyClause": { "type": "boolean", "description": "Append the auto-built chroma-key clause to prompts." }
+      },
+      "additionalProperties": false
+    },
+    "providerConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model": { "type": "string" },
+        "apiKeyEnv": { "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }] },
+        "baseUrl": { "type": "string" },
+        "imageSize": { "type": "string" },
+        "costPerImage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "sync": { "type": "number" }, "batch": { "type": "number" } }
+        },
+        "options": { "type": "object" }
+      }
+    },
+    "derived": {
+      "type": "object",
+      "required": ["id", "prompt", "out"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "prompt": { "type": "string", "minLength": 1, "description": "Edit instruction; the parent's generated image is attached as the reference." },
+        "out": { "type": "string", "minLength": 1 },
+        "px": { "$ref": "#/definitions/px" },
+        "channel": { "type": "string" },
+        "key": { "type": "string" },
+        "post": { "$ref": "#/definitions/postSpec" }
+      }
+    },
+    "asset": {
+      "type": "object",
+      "required": ["id", "prompt", "out"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "description": "Preset: cutout | plate | tile | still, or one defined under `kinds`. Default cutout." },
+        "prompt": { "type": "string", "minLength": 1, "description": "The subject/scene text; the tool wraps it with style blocks and the key clause." },
+        "negative": { "type": "string" },
+        "px": { "$ref": "#/definitions/px", "description": "Final target size in game px. Required unless fit is 'none'." },
+        "out": { "type": "string", "minLength": 1, "description": "Output path relative to paths.assetRoot." },
+        "channel": { "type": "string", "default": "art", "description": "Manifest channel (one exported map per channel)." },
+        "key": { "type": "string", "description": "Manifest key within the channel. Default: id." },
+        "group": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "priority": { "type": "number", "default": 0 },
+        "enabled": { "type": "boolean", "default": true },
+        "ref": { "type": "string", "description": "img2img composition anchor: image path relative to this file." },
+        "styleAnchor": { "type": "string", "description": "Id of another asset whose OUTPUT is fed back as a style reference." },
+        "aspect": { "type": "string", "pattern": "^\\d+:\\d+$" },
+        "seed": { "type": "number" },
+        "model": { "type": "string" },
+        "provider": { "type": "string", "enum": ["gemini", "retrodiffusion", "scenario", "mock"] },
+        "providerOptions": { "type": "object" },
+        "post": { "$ref": "#/definitions/postSpec" },
+        "derive": { "type": "array", "items": { "$ref": "#/definitions/derived" } }
+      }
+    }
+  }
+}

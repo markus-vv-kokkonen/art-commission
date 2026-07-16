@@ -1,0 +1,72 @@
+{
+  "$schema": "../../schema/commission.schema.json",
+  "version": 1,
+  "name": "minimal-example",
+  "paths": {
+    "assetRoot": "public",
+    "rawRoot": ".art-raw",
+    "manifest": "src/artManifest.json"
+  },
+  "style": {
+    "suffix": "Detailed 16-bit pixel art, clean hard pixel edges, hand-painted shading, muted low-saturation palette, moody dusk lighting.",
+    "negative": "no text, no watermark, no signature, no UI, no people, no characters, not photorealistic."
+  },
+  "palette": ["#1a1c2c", "#5d275d", "#b13e53", "#ef7d57", "#ffcd75", "#a7f070", "#38b764", "#257179", "#29366f", "#3b5dc9", "#41a6f6", "#73eff7", "#f4f4f4", "#94b0c2", "#566c86", "#333c57"],
+  "chromaKey": "#ff00ff",
+  "pxScale": 2,
+  "providers": {
+    "default": "gemini",
+    "gemini": { "model": "gemini-3.1-flash-image" }
+  },
+  "assets": [
+    {
+      "id": "crate",
+      "kind": "cutout",
+      "prompt": "A single worn wooden supply crate with iron-banded corners, standing upright.",
+      "px": [32, 32],
+      "out": "art/props/crate.png",
+      "channel": "PROP_ART",
+      "group": "props",
+      "tags": ["breakable"],
+      "priority": 10,
+      "derive": [
+        {
+          "id": "crate_broken",
+          "prompt": "Smash this crate into a low pile of broken debris resting on the ground — same materials, same palette, scattered fragments, nothing standing. Keep it centered.",
+          "out": "art/props/crate_broken.png"
+        }
+      ]
+    },
+    {
+      "id": "floor_stone",
+      "kind": "tile",
+      "prompt": "Seamless top-down worn flagstone floor texture — one tight low-contrast colour family, no landmark the eye can lock onto when it repeats, wraps seamlessly on all four sides.",
+      "px": [64, 64],
+      "out": "art/floors/stone.png",
+      "channel": "FLOOR_ART",
+      "group": "floors",
+      "priority": 20
+    },
+    {
+      "id": "title-dawn",
+      "kind": "still",
+      "prompt": "A quiet village at dawn seen from a hilltop road, one warm lit window, long soft shadows; subject in the upper two-thirds, the bottom band calm and legible.",
+      "out": "art/stills/title-dawn.png",
+      "channel": "STILL_ART",
+      "group": "stills",
+      "aspect": "16:9",
+      "model": "gemini-3-pro-image"
+    },
+    {
+      "id": "title-dusk",
+      "kind": "still",
+      "prompt": "The same village at dusk from the same hilltop road, windows dark, a cold blue hour; subject in the upper two-thirds, the bottom band calm and legible.",
+      "out": "art/stills/title-dusk.png",
+      "channel": "STILL_ART",
+      "group": "stills",
+      "aspect": "16:9",
+      "model": "gemini-3-pro-image",
+      "styleAnchor": "title-dawn"
+    }
+  ]
+}
