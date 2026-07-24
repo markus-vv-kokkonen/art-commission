@@ -112,6 +112,9 @@ export function renderTsModule(m: ArtManifest): string {
     }
     lines.push('};', '');
   }
+  // Keep the file a valid ES module even when nothing is on disk yet (0 channels),
+  // so a namespace import (`import * as m from './artManifest'`) still type-checks.
+  if (Object.keys(m.channels).length === 0) lines.push('export {};', '');
   return lines.join('\n');
 }
 

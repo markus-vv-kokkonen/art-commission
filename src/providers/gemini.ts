@@ -135,8 +135,24 @@ export function createGeminiProvider(cfg: ProviderConfig): Provider {
     const res = await fetch(`${BASE}/models/${model}:batchGenerateContent`, {
       method: 'POST',
       headers: auth({ 'Content-Type': 'application/json' }),
+      // input_config.file_name is the relative `files/<id>` resource name (id ≤ 40 chars);
+      // a fully-qualified URL is rejected with INVALID_ARGUMENT (file id too long).
       body: JSON.stringify({ batch: { display_name: displayName, input_config: { file_name: fileName } } }),
     });
+    // A bare FAILED_PRECONDITION here — no field, no violation list — means the key's project
+    // isn't entitled to the Batch API (it needs billing/paid tier). The request itself is fine,
+    // so say what's actually wrong instead of echoing an opaque error.
+    if (res.status === 400) {
+      const body = await res.text().catch(() => '');
+      if (body.includes('FAILED_PRECONDITION')) {
+        throw new Error(
+          'gemini batch create 400 FAILED_PRECONDITION — the Batch API requires a billing-enabled ' +
+            "(paid-tier) project. Enable billing for this API key's project, or re-run with --sync " +
+            `(per-request, ~2x price). Raw: ${body.slice(0, 200)}`,
+        );
+      }
+      throw new Error(`gemini batch create 400: ${body.slice(0, 300)}`);
+    }
     const data = await ok(res, 'create');
     const name = data?.name ?? data?.metadata?.batch?.name;
     if (!name) throw new Error(`gemini batch create: no job name — ${JSON.stringify(data).slice(0, 200)}`);
