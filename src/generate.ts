@@ -81,14 +81,43 @@ async function buildRequest(
   const refs: ImageRef[] = [];
   let refUsed = false, anchored = false;
 
+  // ASK for the chroma backdrop. post.cutout means keyCutout() will hunt for c.chromaKey and
+  // clear it — but nothing was telling the model to paint it. `chromaKey` reached the request
+  // and only the MOCK provider ever read it (providers/mock.ts paints the backdrop); the real
+  // providers dropped it on the floor, so every cutout depended on the model happening to
+  // choose a magenta-ish background. When it chose a gradient, or two panels on grey, the
+  // border test fell under 0.5 and keyCutout returned the image untouched — shipping a raw
+  // uncut frame at the model's own size. (`PostSpec.keyClause` was declared for this and is
+  // read nowhere, which is why nobody noticed.)
+  if (row.post.cutout && c.chromaKey) {
+    prompt += ` Place the subject on a COMPLETELY FLAT, UNIFORM ${c.chromaKey} magenta background`
+      + ` — exactly that one colour edge to edge, filling every part of the frame the subject`
+      + ` does not cover. The background must be a single solid flat colour: no gradient, no`
+      + ` shading, no vignette, no texture, no shadow falling on it, and nothing else in the`
+      + ` frame. Do not draw a border, a mount, a card or a second panel.`;
+  }
+
+  // `ResolvedCommission.style` types refSuffix/anchorSuffix as Required, but nothing ever
+  // fills them in — so a commission that omits them (ours does) appended the literal string
+  // "undefined" to every referenced and every anchored prompt. Silent, and it rode along on
+  // every character part in the catalogue. Fall back to wording that actually explains what
+  // the attached image is FOR; a reference with no instruction invites copying it wholesale.
+  const refSuffix = c.style.refSuffix
+    ?? ' Use the attached image as a COMPOSITION AND PALETTE reference only.';
+  const anchorSuffix = c.style.anchorSuffix
+    ?? ' The attached image is a STYLE REFERENCE showing the character this piece belongs to.'
+     + ' Match its palette, materials, texture and line weight exactly so the pieces read as'
+     + ' one puppet. Draw ONLY the single piece named at the start of this prompt — do NOT'
+     + ' redraw the whole character, and do not copy its pose.';
+
   const refPath = row.refAbs && existsSync(row.refAbs) ? row.refAbs : probeRefDir(flags.refDir, row.group, row.id);
-  if (refPath) { refs.push(await loadImageRef(refPath)); prompt += c.style.refSuffix; refUsed = true; }
+  if (refPath) { refs.push(await loadImageRef(refPath)); prompt += refSuffix; refUsed = true; }
 
   if (row.styleAnchor) {
     const anchor = c.assets.find((a) => a.id === row.styleAnchor);
     if (anchor && existsSync(anchor.outAbs)) {
       refs.push(await loadImageRef(anchor.outAbs));
-      prompt += c.style.anchorSuffix;
+      prompt += anchorSuffix;
       anchored = true;
     }
   }

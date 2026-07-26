@@ -19,6 +19,14 @@
 
 import type { PostSpec } from './types.js';
 
+/** How many pixel rings outward from the cut the de-spill/de-fringe pass walks. The halo a
+ *  generated image leaves around a chroma backdrop runs 2-3px; one ring is not enough. */
+const FRINGE_PASSES = 3;
+/** Key cast (min(R,B) - G) at which a near-cut pixel is judged backdrop bleed rather than
+ *  subject, and is made transparent instead of merely de-spilled. Measured fringe pixels
+ *  carried 54-66; genuine warm subject colour has B below G and never reaches this test. */
+const FRINGE_CLEAR = 40;
+
 type Sharp = typeof import('sharp').default;
 let _sharp: Sharp | undefined;
 async function sharpMod(): Promise<Sharp> {
@@ -82,24 +90,42 @@ export async function keyCutout(
     if (isKey(o)) { cleared[i] = 1; data[o + 3] = 0; clearedCount++; }
   }
 
-  // de-spill: object pixels touching the cut get the key's cast pulled out.
+  // De-spill AND de-fringe, walking outward from the cut.
+  //
+  // The key does not stop at the tolerance boundary: the model's own soft edges plus
+  // generation/compression ringing leave a 2-3px halo carrying the backdrop's cast — too
+  // far from the key colour to be cleared above, too magenta to keep. This used to run as a
+  // SINGLE 4-adjacent ring, so it corrected the innermost pixel and shipped the rest: a
+  // magenta outline on essentially every cutout in the catalogue, invisible until an
+  // asset's edge happened to land on screen. (It did — the parallax frieze's top edge.)
+  //
+  // So walk out FRINGE_PASSES rings. A pixel still carrying a strong cast is backdrop bleed
+  // and becomes transparent; a weakly-cast one keeps its alpha and just has the cast pulled
+  // out, which preserves the soft edge. Both are gated on adjacency to the cut, so colour
+  // that is legitimately magenta INSIDE a subject is never touched.
+  //
   // (Written for a magenta-family key — R and B above G — which is also the
   // sane choice of key for game art; other keys simply skip the correction.)
   const magentaish = keyRgb[0] > keyRgb[1] && keyRgb[2] > keyRgb[1];
   if (magentaish) {
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const i = y * w + x;
-      if (cleared[i]) continue;
-      const nearCut =
-        (x > 0 && cleared[i - 1]) || (x < w - 1 && cleared[i + 1]) ||
-        (y > 0 && cleared[i - w]) || (y < h - 1 && cleared[i + w]);
-      if (!nearCut) continue;
-      const o = i * 4;
-      const r = data[o], g = data[o + 1], b = data[o + 2];
-      if (r > g && b > g) {
-        const e = Math.min(r, b) - g;
-        data[o] = r - e; data[o + 2] = b - e;
+    for (let pass = 0; pass < FRINGE_PASSES; pass++) {
+      const drop: number[] = [];
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const i = y * w + x;
+        if (cleared[i]) continue;
+        const nearCut =
+          (x > 0 && cleared[i - 1]) || (x < w - 1 && cleared[i + 1]) ||
+          (y > 0 && cleared[i - w]) || (y < h - 1 && cleared[i + w]);
+        if (!nearCut) continue;
+        const o = i * 4;
+        const r = data[o], g = data[o + 1], b = data[o + 2];
+        if (!(r > g && b > g)) continue;
+        const cast = Math.min(r, b) - g;      // how much key this pixel is still carrying
+        if (cast >= FRINGE_CLEAR) drop.push(i);
+        else { data[o] = r - cast; data[o + 2] = b - cast; }
       }
+      if (drop.length === 0) break;           // frontier is clean — nothing left to erode
+      for (const i of drop) { data[i * 4 + 3] = 0; cleared[i] = 1; clearedCount++; }
     }
   }
 
