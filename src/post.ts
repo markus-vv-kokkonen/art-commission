@@ -155,6 +155,33 @@ export async function fitContain(
     .png().toBuffer());
 }
 
+/**
+ * Trim, then scale to fit inside target px — and DO NOT pad. The stored PNG's own
+ * dimensions are the artwork's, so `px` is a resolution budget rather than a frame.
+ *
+ * Why this exists, when `contain` already fits inside: a padded sprite is fine for a
+ * consumer that positions by the frame, and wrong for one that positions by the art.
+ * A rig part is the second kind. The rig draws the whole PNG into a bone-sized box, so
+ * a transparent margin silently shrinks the art inside that box — and because each part
+ * is trimmed then contained independently, every part shrinks by a DIFFERENT amount
+ * (measured on Podge: `torso_core` filled 77% of its width, `foreleg_lower_l` just 38%).
+ * No amount of tuning the rig's numbers fixes that; the padding has to not be there.
+ */
+export async function fitInside(
+  input: Uint8Array, w: number, h: number,
+  kernel: 'nearest' | 'lanczos3' = 'nearest', trim = true,
+): Promise<Uint8Array> {
+  const sharp = await sharpMod();
+  let buf = Buffer.from(input);
+  if (trim) {
+    // trim() on a fully-opaque image trims by corner colour — only safe post-cutout
+    buf = await sharp(buf).trim({ threshold: 8 }).png().toBuffer().catch(() => Buffer.from(input));
+  }
+  return new Uint8Array(await sharp(buf)
+    .resize(w, h, { kernel, fit: 'inside' })
+    .png().toBuffer());
+}
+
 /** Resize filling the exact target (full-bleed sources prompted at the same aspect). */
 export async function fitCover(
   input: Uint8Array, w: number, h: number,
@@ -232,9 +259,10 @@ export async function applyPost(
     else { bytes = cut.bytes; cutOk = true; }
   }
   if (!o.noDownscale && storePx && post.fit !== 'none') {
-    if (post.fit === 'contain') {
+    if (post.fit === 'contain' || post.fit === 'inside') {
       // an un-cut opaque image must not be trimmed (trim keys off corner colour)
-      if (!post.cutout || cutOk) bytes = await fitContain(bytes, storePx[0], storePx[1], post.kernel, post.trim);
+      const fit = post.fit === 'inside' ? fitInside : fitContain;
+      if (!post.cutout || cutOk) bytes = await fit(bytes, storePx[0], storePx[1], post.kernel, post.trim);
     } else {
       bytes = await fitCover(bytes, storePx[0], storePx[1], post.kernel);
     }

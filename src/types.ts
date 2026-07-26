@@ -28,10 +28,14 @@ export interface PostSpec {
   /**
    * How the image meets the target px:
    *   contain — scale to fit INSIDE target px, never cropping, pad transparent
+   *   inside  — as contain, but WITHOUT the padding: the stored PNG's own
+   *             dimensions are the artwork's, so px is a resolution budget and
+   *             not a frame. For consumers that position by the ART (rig parts)
+   *             rather than by the frame — see fitInside in post.ts.
    *   cover   — scale to fill target px exactly (same-aspect sources)
    *   none    — keep the model's native resolution untouched
    */
-  fit: 'contain' | 'cover' | 'none';
+  fit: 'contain' | 'cover' | 'inside' | 'none';
   /** Hard-lock every opaque pixel to the nearest palette colour. */
   quantize: boolean;
   /**

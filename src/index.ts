@@ -20,7 +20,7 @@ export {
 } from './generate.js';
 export { runRepost, type RepostFlags, type RepostSummary } from './repost.js';
 export { buildManifest, writeManifest, renderTsModule, type ArtManifest, type WireScan } from './wire.js';
-export { keyCutout, fitContain, fitCover, quantizePalette, applyPost, hexToRgb } from './post.js';
+export { keyCutout, fitContain, fitInside, fitCover, quantizePalette, applyPost, hexToRgb } from './post.js';
 export { processAndWrite, loadImageRef, probeRefDir, writeBytes } from './pipeline.js';
 export { createProvider, providerNames } from './providers/index.js';
 export type { Provider, GenRequest, ImageRef, ModelInfo, BatchHooks } from './providers/types.js';

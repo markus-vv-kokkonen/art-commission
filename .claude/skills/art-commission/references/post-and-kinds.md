@@ -14,7 +14,7 @@ A `kind` is a named bundle of these; per-asset `post` overrides individual field
 | --- | --- | --- |
 | `cutout` | bool | chroma-key the prompted backdrop into real PNG alpha, then de-spill |
 | `trim` | bool | trim fully-transparent margins (only meaningful **after** a cutout) |
-| `fit` | `contain` \| `cover` \| `none` | how the image meets the target px (below) |
+| `fit` | `contain` \| `inside` \| `cover` \| `none` | how the image meets the target px (below) |
 | `quantize` | bool | hard-lock every opaque pixel to the nearest `palette` colour |
 | `kernel` | `nearest` \| `lanczos3` | resample kernel — `nearest` keeps pixel-art crispness; `lanczos3` suits painterly/HD art |
 
@@ -24,6 +24,14 @@ A `kind` is a named bundle of these; per-asset `post` overrides individual field
   transparency. The subject arrives whole at its in-game size whatever aspect the model returned.
   Used by `cutout` (an un-cut opaque image is *not* trimmed, because `trim` keys off the corner
   colour and would misbehave without alpha).
+- **`inside`** — as `contain`, but **without the padding**: the stored PNG's own dimensions are
+  the artwork's, so `px` is a resolution *budget* and not a frame. Choose it when the consumer
+  positions by the ART rather than by the frame. A rig part is the case that forced it: the rig
+  draws the whole PNG into a bone-sized box, so a transparent margin shrinks the art inside that
+  box — and since each part is trimmed then fitted independently, every part shrinks by a
+  different amount (Podge's `torso_core` filled 77% of its width, `foreleg_lower_l` just 38%).
+  The cost is that stored dimensions vary per asset, so anything that needs an exact frame —
+  a wrapping tile, a parallax band — must stay on `contain`/`cover`.
 - **`cover`** — scale to **fill** the target exactly (for full-bleed sources you prompted at the
   same aspect). Used by `plate`/`tile`.
 - **`none`** — keep the model's native resolution untouched. Used by `still`; the engine scales it.

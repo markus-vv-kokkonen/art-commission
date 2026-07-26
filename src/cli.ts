@@ -175,7 +175,13 @@ async function cmdGenerate(): Promise<void> {
   const summary = await runGenerate(c, sel.rows, flags);
   console.log(`\n▪ done — ${summary.generated} generated, ${summary.skipped} skipped, ${summary.failed.length} failed.`);
   if (summary.failed.length) {
-    console.log('  failed: ' + summary.failed.map((f) => f.id).join(', '));
+    // Print the REASON, not just the id. runGenerate already captures it on Outcome.error
+    // (generate.ts:218), and dropping it here meant a failed asset was undiagnosable without
+    // paying to re-run it — the difference between a safety refusal, a transient batch error
+    // and a billing precondition all looked identical.
+    for (const f of summary.failed) {
+      console.log(`  failed: ${f.id}` + (f.error ? `\n           ${f.error}` : ' (no reason reported by the provider)'));
+    }
     process.exitCode = 1;
   }
   console.log('  next: art-commission wire\n');
