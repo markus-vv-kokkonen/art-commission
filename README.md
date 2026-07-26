@@ -49,9 +49,20 @@ The hard-won rules are baked in as defaults.
 
 ## Quick start
 
+Install it into your game as a dependency, pinned to a release tag — the
+`prepare` script builds it on install, so the `art-commission` binary is ready
+to run:
+
 ```sh
-npm install                       # (in this package; needs Node ≥ 20)
-npm run build
+bun  add --dev github:markus-vv-kokkonen/art-commission#v0.1
+# or: npm install --save-dev github:markus-vv-kokkonen/art-commission#v0.1
+```
+
+Or to hack on the package itself:
+
+```sh
+bun install                       # (in this package; needs Node ≥ 20)
+bun run build
 
 node dist/cli.js init             # scaffold commission.json
 node dist/cli.js validate
@@ -297,7 +308,7 @@ examples/minimal/               a four-asset example exercising every mechanism
 test/                           node:test suite — the whole loop runs offline via mock
 ```
 
-`npm test` builds and runs the suite; no keys, no network, no spend.
+`bun run test` builds and runs the suite; no keys, no network, no spend.
 
 ---
 

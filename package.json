@@ -18,9 +18,10 @@
     "README.md"
   ],
   "scripts": {
+    "prepare": "tsc",
     "build": "tsc",
     "check": "tsc --noEmit",
-    "test": "npm run build && node --test \"test/*.test.mjs\""
+    "test": "bun run build && node --test \"test/*.test.mjs\""
   },
   "dependencies": {
     "sharp": "^0.35.3"
