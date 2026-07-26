@@ -1,2 +1,8 @@
 node_modules
-dist
+
+# dist/ IS committed, deliberately. `bin` points into it, and consumers install this
+# package straight from a git tag — where no build ever runs. bun does not install a
+# git dependency's devDependencies, so a `prepare: tsc` step cannot work there (it
+# fails the whole install with `tsc: command not found`). Shipping the built output
+# is what makes `bun add github:…/art-commission#v0.1` produce a working binary.
+# Rebuild with `bun run build` before tagging a release; CI checks it is current.

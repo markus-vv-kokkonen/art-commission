@@ -49,9 +49,9 @@ The hard-won rules are baked in as defaults.
 
 ## Quick start
 
-Install it into your game as a dependency, pinned to a release tag — the
-`prepare` script builds it on install, so the `art-commission` binary is ready
-to run:
+Install it into your game as a dependency, pinned to a release tag. `dist/` is
+committed, so the `art-commission` binary works straight from a git install with
+no build step — under bun, npm or anything else:
 
 ```sh
 bun  add --dev github:markus-vv-kokkonen/art-commission#v0.1
