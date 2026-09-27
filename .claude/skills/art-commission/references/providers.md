@@ -71,7 +71,7 @@ requests are painted on the real `chromaKey`** with a smaller subject shape insi
 has genuine work — the whole pipeline (prompt assembly, cutout, fit, quantize, derivations, anchor
 chains, wiring) is exercised. Two big uses:
 
-1. **CI / tests** run the entire loop with no key (`npm test` uses it).
+1. **CI / tests** run the entire loop with no key (`bun run test` uses it).
 2. **Placeholder-first development:** commission the whole catalogue as placeholders, watch every
    asset land in-engine at the right size, then re-run against a real provider with **identical
    selection flags**. `generate --provider=mock` then swap `--provider=gemini`.

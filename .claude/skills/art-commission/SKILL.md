@@ -59,12 +59,14 @@ A bad round costs one look, not a re-buy.
 
 ## Setup / how to invoke the CLI
 
-The published binary is `art-commission`, but in a fresh checkout it must be **built
-first** (the `bin` points at `dist/`):
+The published binary is `art-commission`; its `bin` points at `dist/`, which is
+**committed** (a git-tag install runs no build, so the built output ships in the repo).
+A fresh checkout therefore works without building — but after editing `src/` you must
+rebuild and commit `dist/` (CI fails on drift):
 
 ```sh
-npm install            # needs Node ≥ 20; installs sharp (the one runtime dep)
-npm run build          # tsc → dist/
+bun install            # needs Node ≥ 20; installs sharp (the one runtime dep)
+bun run build          # tsc → dist/ — commit the result with the src change
 node dist/cli.js <command> [flags]
 ```
 
@@ -266,5 +268,5 @@ examples/minimal/     a four-asset example exercising cutout, tile, still, deriv
 test/                 node:test suite — the whole loop runs offline via mock
 ```
 
-`npm test` builds and runs the suite with no keys, no network, no spend. If you extend the
+`bun run test` builds and runs the suite with no keys, no network, no spend. If you extend the
 tool, keep that true: the mock provider must remain able to exercise the whole pipeline.

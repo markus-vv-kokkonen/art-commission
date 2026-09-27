@@ -318,8 +318,6 @@ This package is the generalized extraction of
 `tools/areagen-art` from *Candlemere: The Kingdom Is Grateful*
 ([reverse-rpg](https://github.com/markus-vv-kokkonen/reverse-rpg)) — see that
 repo's `tools/areagen-art/export-commission.ts` for a real 450-asset exporter
-mapping a live game catalogue onto this format. It is designed to be lifted
-into its own repository as-is: the folder is self-contained (own
-`package.json`, no imports from the host repo). Pick a license before
-publishing (`"license"` is declared MIT in package.json; add the LICENSE file
-with the copyright holder you want).
+mapping a live game catalogue onto this format. It now lives in its own
+repository (MIT, see `LICENSE`) and is consumed by games as a git dependency
+pinned to a release tag.
