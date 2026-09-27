@@ -74,7 +74,7 @@
       "properties": {
         "cutout": { "type": "boolean", "description": "Chroma-key the prompted backdrop into real PNG alpha." },
         "trim": { "type": "boolean", "description": "Trim transparent margins (post-cutout only)." },
-        "fit": { "type": "string", "enum": ["contain", "cover", "none"] },
+        "fit": { "type": "string", "enum": ["contain", "inside", "cover", "none"] },
         "quantize": { "type": "boolean", "description": "Hard-lock opaque pixels to the palette." },
         "kernel": { "type": "string", "enum": ["nearest", "lanczos3"] }
       }
